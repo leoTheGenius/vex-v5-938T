@@ -83,32 +83,20 @@ using namespace vex;
 
 controller Controller1;
 
- 
-
 motor frontleft = motor(PORT2, ratio6_1, false);
-
 motor frontright = motor(PORT9, ratio6_1, true);
-
 motor backleft = motor(PORT12, ratio6_1, false);
-
 motor backright = motor(PORT20, ratio6_1, true);
  
 
 motor intakebottom(PORT1, ratio6_1, true);
-
 motor intakemiddle(PORT10, ratio6_1, false);
+motor intaketop(PORT11, ratio6_1, true);
 
 motor storage(PORT3, ratio6_1, false);
 
-motor intaketop(PORT11, ratio6_1, true);
-
- 
-
 digital_out scraper(Brain.ThreeWirePort.A);
 
-
-
- 
 
 // Intake/storage mode enums
 
@@ -116,11 +104,7 @@ enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, LEFT_MODE, RIGHT_MODE};
 
 Mode activeMode = NONE;
 
- 
 
-
-
- 
 
 // previous button states (used later)
 
@@ -148,9 +132,11 @@ int main() {
   intakebottom.setStopping(brake);
   intakemiddle.setStopping(brake);
   intaketop.setStopping(brake);
+
   intakebottom.setVelocity(100, percent);
   intakemiddle.setVelocity(100, percent);
   intaketop.setVelocity(100, percent);
+
   frontleft.setVelocity(100, percent);
   frontright.setVelocity(100, percent);
   backleft.setVelocity(100, percent);
@@ -256,13 +242,14 @@ int main() {
       }
     }
     ////upper center goal scoring 
-    else if ((currb == true) && (prevb == false)) {
+    if ((currb == true) && (prevb == false)) {
       activeMode = (activeMode == B_MODE) ? NONE : B_MODE;
         if (activeMode == B_MODE) {
         intakebottom.spin(forward, 100, percent);
         // intaketop.spin(reverse, 100, percent);
         intakemiddle.spin(reverse, 100, percent);
         storage.spin(forward, 100, percent);
+        intaketop.stop();
       }
       else {
         intakebottom.stop();
@@ -272,12 +259,13 @@ int main() {
       }
     }
     ////into storage intake
-    else if ((currr1 == true) && (prevr1 == false)) {
+    if ((currr1 == true) && (prevr1 == false)) {
       activeMode = (activeMode == R1_MODE) ? NONE : R1_MODE;
       if (activeMode == R1_MODE) {
         intaketop.spin(forward, 100, percent);
         intakebottom.spin(forward, 100, percent);
         intakemiddle.spin(forward, 100, percent);
+        storage.stop();
       }
       else {
         intakebottom.stop();
@@ -286,7 +274,7 @@ int main() {
       }
     } 
     ////lower center goal scoring
-    else if ((currr2 == true) && (prevr2 == false)) {
+    if ((currr2 == true) && (prevr2 == false)) {
       activeMode = (activeMode == R2_MODE) ? NONE : R2_MODE;
       if (activeMode == R2_MODE) {
         storage.spin(forward, 100, percent);
@@ -302,7 +290,7 @@ int main() {
       }
     } 
     //storage forward
-    else if ((currleft == true) && (prevleft == false)) {
+    if ((currleft == true) && (prevleft == false)) {
       activeMode = (activeMode == LEFT_MODE) ? NONE : LEFT_MODE;
       if (activeMode == LEFT_MODE) {
         storage.spin(forward, 100, percent);
@@ -312,7 +300,7 @@ int main() {
       }
     } 
     //storage backwards
-    else if ((currright == true) && (prevright == false)) {
+    if ((currright == true) && (prevright == false)) {
       activeMode = (activeMode == RIGHT_MODE) ? NONE : RIGHT_MODE;
       if (activeMode == RIGHT_MODE) {
         storage.spin(reverse, 100, percent);
