@@ -1,1 +1,14 @@
-guys this is the vex 938t code, if you don't know how to use github and stuff, learn it.
+Go to GitHub.com
+
+
+
+Create account
+
+
+
+Install GitHub Desktop
+
+
+
+Clone the Repository
+
