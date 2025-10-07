@@ -83,8 +83,8 @@ using namespace vex;
 
 controller Controller1;
 
-motor frontleft = motor(PORT2, ratio6_1, false);
-motor frontright = motor(PORT9, ratio6_1, true);
+motor frontleft = motor(PORT2, ratio6_1, true);
+motor frontright = motor(PORT9, ratio6_1, false);
 motor backleft = motor(PORT12, ratio6_1, false);
 motor backright = motor(PORT20, ratio6_1, true);
  
@@ -189,23 +189,7 @@ int main() {
   //driver control starts
   while (true) {
 
-    // drivetrain control
-    // double speed = 1;
-    // int driveSpeed = speed * Controller1.Axis3.position(percent);
 
-    // int turnSpeed = speed * Controller1.Axis1.position(percent);
-
-
-    // frontleft.setVelocity(driveSpeed + turnSpeed, percent);
-    // backleft.setVelocity(driveSpeed + turnSpeed, percent);
-    // frontright.setVelocity(driveSpeed - turnSpeed, percent);
-    // backright.setVelocity(driveSpeed - turnSpeed, percent);
-
- 
-    // frontleft.spin(forward);
-    // backleft.spin(forward);
-    // frontright.spin(forward);
-    // backright.spin(forward);
 
     frontleft.setVelocity(Controller1.Axis3.position()+Controller1.Axis1.position(), percent);
     frontright.setVelocity(Controller1.Axis3.position()-Controller1.Axis1.position(), percent);
@@ -328,51 +312,6 @@ int main() {
     prevright = currright;
  
 
-    // // control intake motors
-
-    // switch (activeMode) {
-    //   case A_MODE:
-    //     intakebottom.spin(forward, 100, percent);
-    //     intaketop.spin(forward, 100, percent);
-    //     intakemiddle.spin(reverse, 100, percent);
-    //     break;
-    //   case B_MODE:
-    //     intakebottom.spin(reverse, 100, percent);
-    //     intaketop.spin(reverse, 100, percent);
-    //     intakemiddle.spin(forward, 100, percent);
-    //     break;
-    //   case R1_MODE:
-    //     storage.spin(forward, 100, percent);
-    //     intakebottom.spin(forward, 100, percent);
-    //     intakemiddle.spin(forward, 100, percent);
-    //     break;
-    //   case R2_MODE:
-    //     storage.spin(forward, 100, percent);
-    //     intakebottom.spin(forward, 100, percent);
-    //     intakemiddle.spin(reverse, 100, percent);
-    //     intaketop.spin(reverse, 100, percent);
-    //     break;
-    //   case L1_MODE:
-    //     storage.spin(forward, 100, percent);
-    //     intakebottom.spin(reverse, 100, percent);
-    //     intakemiddle.spin(reverse, 100, percent);
-    //     break;
-    //   case NONE:
-    //     //if no buttons are pressed, then the motors will continue spinning, because otherwise yuou would 
-    //     //have to hold down all of the buttons to do stuff.
-
-    //     break;
-
-    // }
-    // if (Controller1.ButtonRight.pressing()) {
-    //   Brain.programStop();
-    // }
- 
-
-
-
- 
-
     // pneumatic control
     if (Controller1.ButtonL1.pressing()) {
       scraper.set(true);
@@ -386,40 +325,3 @@ int main() {
 }
 
  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
