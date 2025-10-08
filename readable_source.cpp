@@ -100,7 +100,7 @@ digital_out scraper(Brain.ThreeWirePort.A);
 
 // Intake/storage mode enums
 
-enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, LEFT_MODE, RIGHT_MODE};
+enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, DOWN_MODE, RIGHT_MODE};
 
 Mode activeMode = NONE;
 
@@ -110,9 +110,9 @@ Mode activeMode = NONE;
 
 bool preva = false, prevb = false;
 
-bool prevr1 = false, prevr2 = false;
+bool prevy = false, prevr2 = false;
 
-bool prevleft = false, prevy = false;
+bool prevdown = false, prevr1 = false;
 
 bool prevright = false;
 
@@ -121,12 +121,14 @@ void DriveForward(double dist) {
   frontright.spinFor(forward, dist * 360, degrees, false);
   backleft.spinFor(forward, dist * 360, degrees, false);
   backright.spinFor(forward, dist * 360, degrees, false);
+  wait(2, seconds);
 }
 void Turn(double degree) {
   frontleft.spinFor(forward, degree * 3, degrees, false);
   frontright.spinFor(reverse, degree * 3, degrees, false);
   backleft.spinFor(forward, degree * 3, degrees, false);
   backright.spinFor(reverse, degree * 3, degrees, false);
+  wait(2, seconds);
 }
 int main() {
   intakebottom.setStopping(brake);
@@ -160,7 +162,7 @@ int main() {
   scraper.set(true);
   DriveForward(2.236);
 
-  wait(2, seconds);
+  wait(5, seconds);
   intakebottom.stop();
   intakemiddle.stop();
   intaketop.stop();
@@ -204,7 +206,7 @@ int main() {
     // bool currl1 = Controller1.ButtonL1.pressing();
     // bool currx = Controller1.ButtonX.pressing();
     bool curry = Controller1.ButtonY.pressing();
-    bool currleft = Controller1.ButtonLeft.pressing();
+    bool currdown = Controller1.ButtonLeft.pressing();
     bool currright = Controller1.ButtonRight.pressing();
  
 
@@ -274,9 +276,9 @@ int main() {
       }
     } 
     //storage forward
-    if ((currleft == true) && (prevleft == false)) {
-      activeMode = (activeMode == LEFT_MODE) ? NONE : LEFT_MODE;
-      if (activeMode == LEFT_MODE) {
+    if ((currdown == true) && (prevdown == false)) {
+      activeMode = (activeMode == DOWN_MODE) ? NONE : DOWN_MODE;
+      if (activeMode == DOWN_MODE) {
         storage.spin(forward, 100, percent);
       }
       else {
@@ -308,7 +310,7 @@ int main() {
     // prevl1 = currl1;
     // prevx = currx;
     prevy = curry;
-    prevleft = currleft;
+    prevdown = currdown;
     prevright = currright;
  
 
