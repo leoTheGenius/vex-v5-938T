@@ -150,16 +150,16 @@ int main() {
       // break;
     
   }
-  // go forward 2-ish feet and intake blocks
+  // go forward 4-ish feet and intake blocks
   // int autonForward = 720;
-  DriveForward(2);
+  DriveForward(4);
   intakebottom.spin(forward);
   intakemiddle.spin(forward);
   intaketop.spin(forward);
   //turn about 30 degrees
 
   Turn(30.0);
-  scraper.set(true);
+  scraper.set(false);
   DriveForward(2.236);
 
   wait(5, seconds);
@@ -316,9 +316,9 @@ int main() {
 
     // pneumatic control
     if (Controller1.ButtonL1.pressing()) {
-      scraper.set(true);
-    } else if (Controller1.ButtonL2.pressing()) {
       scraper.set(false);
+    } else if (Controller1.ButtonL2.pressing()) {
+      scraper.set(true);
     }
 
     wait(20, msec);
