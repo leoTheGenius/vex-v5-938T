@@ -100,7 +100,7 @@ digital_out scraper(Brain.ThreeWirePort.A);
 
 // Intake/storage mode enums
 
-enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, LEFT_MODE, RIGHT_MODE};
+enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, DOWN_MODE, RIGHT_MODE};
 
 Mode activeMode = NONE;
 
@@ -112,7 +112,7 @@ bool preva = false, prevb = false;
 
 bool prevr1 = false, prevr2 = false;
 
-bool prevleft = false, prevy = false;
+bool prevdown = false, prevy = false;
 
 bool prevright = false;
 
@@ -204,7 +204,7 @@ int main() {
     // bool currl1 = Controller1.ButtonL1.pressing();
     // bool currx = Controller1.ButtonX.pressing();
     bool curry = Controller1.ButtonY.pressing();
-    bool currleft = Controller1.ButtonLeft.pressing();
+    bool currdown = Controller1.ButtonDown.pressing();
     bool currright = Controller1.ButtonRight.pressing();
  
 
@@ -274,9 +274,9 @@ int main() {
       }
     } 
     //storage forward
-    if ((currleft == true) && (prevleft == false)) {
-      activeMode = (activeMode == LEFT_MODE) ? NONE : LEFT_MODE;
-      if (activeMode == LEFT_MODE) {
+    if ((currdown == true) && (prevdown == false)) {
+      activeMode = (activeMode == DOWN_MODE) ? NONE : DOWN_MODE;
+      if (activeMode == DOWN_MODE) {
         storage.spin(forward, 100, percent);
       }
       else {
@@ -308,7 +308,7 @@ int main() {
     // prevl1 = currl1;
     // prevx = currx;
     prevy = curry;
-    prevleft = currleft;
+    prevdown = currdown;
     prevright = currright;
  
 
