@@ -23,7 +23,7 @@ Committing and pushing updated code through terminal
     3. Type "cd {wherever the repository is saved on your computer}"
         a. example: "cd Documents/vex-v5-938t/"
     4. Type "git status" and hit enter. you should see that your work has been changed.
-    5. Type "git add ."
+    5. Type "git add {file name}, if you want to commit every change you've made, type "git add .""
     6. Type "git commit -m "your commit message here""
         a. commit message should be helpful, describing what you have changed in the commit, such as "commit -m "changed buttons on controller""
     7. Then type "git push". this will update the github files.
