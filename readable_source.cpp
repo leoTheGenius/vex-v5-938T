@@ -72,7 +72,7 @@ void playVexcodeSound(const char *soundName) {
 
 // Include the V5 Library
 #include "vex.h"
-  
+#include "cmath"  
 // Allows for easier use of the VEX Library
 using namespace vex;
  
@@ -97,6 +97,7 @@ motor storage(PORT3, ratio6_1, false);
 
 digital_out scraper(Brain.ThreeWirePort.A);
 
+distance distancefront = distance(PORT14);
 
 // Intake/storage mode enums
 
@@ -116,29 +117,91 @@ bool prevdown = false, prevy = false;
 
 bool prevright = false;
 
-void setAllDriveVelocity(int percentVelocity) {
+int speedchanger = 10;
+
+void SetAllDriveVelocity(int percentVelocity) {
   frontleft.setVelocity(percentVelocity, percent);
   frontright.setVelocity(percentVelocity, percent);
   backleft.setVelocity(percentVelocity, percent);
   backright.setVelocity(percentVelocity, percent);
 }
-void spinDriveForwards(int dist) {
-  frontleft.spinFor(forward, dist * 376, degrees, false);
-  frontright.spinFor(forward, dist * 376, degrees, false);
-  backleft.spinFor(forward, dist * 376, degrees, false);
-  backright.spinFor(forward, dist * 376, degrees, true);
+void SpinDriveForwards(int dist) {
+  frontleft.spinFor(forward, dist * 343, degrees, false);
+  frontright.spinFor(forward, dist * 343, degrees, false);
+  backleft.spinFor(forward, dist * 343, degrees, false);
+  backright.spinFor(forward, dist * 343, degrees, false);
 }
-void DriveForward(double dist, int slowSpeedPercent, double distSpeedChange) {
-  frontleft.stop();
-  frontright.stop();
-  backleft.stop();
-  backright.stop();
-  wait(300, msec);
-  int fullSpeedDist = dist - distSpeedChange;
-  setAllDriveVelocity(100);
-  spinDriveForwards(fullSpeedDist);
-  setAllDriveVelocity(slowSpeedPercent);
-  spinDriveForwards(distSpeedChange);
+void DriveForward(double dist/*, int slowSpeedPercent, double distSpeedChange*/) {
+  // frontleft.stop();
+  // frontright.stop();
+  // backleft.stop();
+  // backright.stop();
+  // wait(300, msec);
+  // int fullSpeedDist = dist - distSpeedChange;
+  // SetAllDriveVelocity(speedchanger);
+  // SpinDriveForwards(fullSpeedDist);
+  // SetAllDriveVelocity(slowSpeedPercent*speedchanger/100);
+  // SpinDriveForwards(distSpeedChange);
+
+  // frontleft.stop();
+  // frontright.stop();
+  // backleft.stop();
+  // backright.stop();
+  /////change these constants so it works well1!!
+  double kp = 0.0;
+  double ki = 0.00;
+  double kd= 0.0;
+
+  double targetdegrees = dist * 343;
+
+
+  frontleft.setPosition(0, degrees);
+  frontright.setPosition(0, degrees);
+  backleft.setPosition(0, degrees);
+  backright.setPosition(0, degrees);
+
+
+  double error = 0;
+  double preverror = 0;
+  double integral = 0;
+  double derivative = 0;
+  double output = 0;
+
+
+  double prevtime = Brain.timer(msec);
+
+  while (true) {
+    double currenttime = Brain.timer(msec);
+    double timechange = (currenttime - prevtime)/1000; 
+
+    double avgpos = (
+      frontleft.position(degrees) +
+      frontright.position(degrees) +
+      backleft.position(degrees) +
+      backright.position(degrees)
+    ) / 4.0;
+
+    error = targetdegrees - avgpos;
+    integral += error * timechange;
+    derivative = (error - preverror) / timechange;
+
+    output = (kp * error) + (ki * integral) + (kd* derivative);
+
+    if (output > 100) output = 100;
+    if (output < -100) output = -100;
+
+    frontleft.spin(forward, output, percent);
+    frontright.spin(forward, output, percent);
+    backleft.spin(forward, output, percent);
+    backright.spin(forward, output, percent);
+
+    preverror = error;
+    prevtime = currenttime;
+
+    if (fabs(error) < 20) break;
+
+    wait(20, msec);
+  }
 
   frontleft.stop();
   frontright.stop();
@@ -174,10 +237,10 @@ int main() {
   backleft.setVelocity(100, percent);
   backright.setVelocity(100, percent);
 
-  frontleft.setStopping(brake);
-  frontright.setStopping(brake);
-  backleft.setStopping(brake);
-  backright.setStopping(brake);
+  frontleft.setStopping(hold);
+  frontright.setStopping(hold);
+  backleft.setStopping(hold);
+  backright.setStopping(hold);
   //autonomous code
   while (!Controller1.ButtonUp.pressing()) {
     // if (Controller1.ButtonUp.pressing()) {
@@ -185,41 +248,52 @@ int main() {
       // break;
     
   }
-  DriveForward(2.8, 30, 1);
-  wait(0.1, seconds);
-  Turn(-85.0);
+  DriveForward(3.1);
+  Turn(90);
   scraper.set(false);
+  DriveForward(1);
   intakebottom.spin(forward);
   intakemiddle.spin(forward);
   intaketop.spin(forward);
-  DriveForward(0.5, 50, 0.125);
+  wait(3, seconds);
+  DriveForward(-1);
   scraper.set(true);
-  DriveForward(-0.6, 30, 0.4);
-  wait(0.1, seconds);
-  Turn(-120.0);
-  wait(0.1, seconds);
-  DriveForward(1.8, 30, 0.9);
-  wait(0.1, seconds);
-  Turn(-140.0);
-  wait(0.1, seconds);
-  DriveForward(2.5, 30, 1);
-  wait(0.1, seconds);
-  Turn(90.0);
-  wait(0.1, seconds);
-  DriveForward(2.0, 20, 0.6);
-  wait(0.1, seconds);
-  intakebottom.spin(forward);
-  intakemiddle.spin(forward);
-  intaketop.spin(reverse);
-  storage.spin(forward);
-  wait(1, seconds);
-  storage.spin(reverse);
-  wait(0.7, seconds);
-  storage.spin(forward);
-  wait(1, seconds);
-  storage.spin(reverse);
-  wait(0.7, seconds);
-  storage.spin(forward);
+
+ // DriveForward(2.3, 30, 1);
+  // wait(0.1, seconds);
+  // Turn(-100.0);
+  // scraper.set(false);
+  // intakebottom.spin(forward);
+  // intakemiddle.spin(forward);
+  // intaketop.spin(forward);
+  // DriveForward(0.5, 50, 0.125);
+  // scraper.set(true);
+  // DriveForward(-0.1, 30, 0);
+  // wait(0.1, seconds);
+  // Turn(-120.0);
+  // wait(0.1, seconds);
+  // DriveForward(1.8, 30, 0.9);
+  // wait(0.1, seconds);
+  // Turn(-140.0);
+  // wait(0.1, seconds);
+  // DriveForward(2.5, 30, 1);
+  // wait(0.1, seconds);
+  // Turn(90.0);
+  // wait(0.1, seconds);
+  // DriveForward(2.0, 20, 0.6);
+  // wait(0.1, seconds);
+  // intakebottom.spin(forward);
+  // intakemiddle.spin(forward);
+  // intaketop.spin(reverse);
+  // storage.spin(forward);
+  // wait(1, seconds);
+  // storage.spin(reverse);
+  // wait(0.7, seconds);
+  // storage.spin(forward);
+  // wait(1, seconds);
+  // storage.spin(reverse);
+  // wait(0.7, seconds);
+  // storage.spin(forward);
   while (true) {
     if (Brain.Timer.time(seconds) > 14.5) {
       intakebottom.stop();
@@ -229,8 +303,11 @@ int main() {
       break;
     }
   }
-
   //autonomous over
+  frontleft.setStopping(coast);
+  frontright.setStopping(coast);
+  backleft.setStopping(coast);
+  backright.setStopping(coast);
   frontleft.spin(forward);
   frontright.spin(forward);
   backleft.spin(forward);
