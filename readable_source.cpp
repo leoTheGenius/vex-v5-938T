@@ -117,7 +117,7 @@ bool prevdown = false, prevy = false;
 
 bool prevright = false;
 
-int speedchanger = 10;
+int speedchanger = 100;
 
 void SetAllDriveVelocity(int percentVelocity) {
   frontleft.setVelocity(percentVelocity, percent);
@@ -142,15 +142,14 @@ void DriveForward(double dist/*, int slowSpeedPercent, double distSpeedChange*/)
   // SpinDriveForwards(fullSpeedDist);
   // SetAllDriveVelocity(slowSpeedPercent*speedchanger/100);
   // SpinDriveForwards(distSpeedChange);
-
   // frontleft.stop();
   // frontright.stop();
   // backleft.stop();
   // backright.stop();
-  /////change these constants so it works well1!!
-  double kp = 0.0;
-  double ki = 0.00;
-  double kd= 0.0;
+  ///change these constants so it works well1!!
+  double kp = 0.15;
+  double ki = 0.04;
+  double kd= 0.11;
 
   double targetdegrees = dist * 343;
 
@@ -223,87 +222,52 @@ void Turn(double degree/*           left is - and right is +           */) {
   backleft.stop();
   backright.stop();
 }
-int main() {
-  intakebottom.setStopping(brake);
-  intakemiddle.setStopping(brake);
-  intaketop.setStopping(brake);
-
-  intakebottom.setVelocity(100, percent);
-  intakemiddle.setVelocity(100, percent);
-  intaketop.setVelocity(100, percent);
-
-  frontleft.setVelocity(100, percent);
-  frontright.setVelocity(100, percent);
-  backleft.setVelocity(100, percent);
-  backright.setVelocity(100, percent);
-
-  frontleft.setStopping(hold);
-  frontright.setStopping(hold);
-  backleft.setStopping(hold);
-  backright.setStopping(hold);
-  //autonomous code
-  while (!Controller1.ButtonUp.pressing()) {
-    // if (Controller1.ButtonUp.pressing()) {
-    Brain.Timer.clear();
-      // break;
-    
-  }
-  DriveForward(3.1);
-  Turn(90);
-  scraper.set(false);
-  DriveForward(1);
+competition Teamwork = competition();
+void auton() {
+  storage.setVelocity(100, percent);
+  DriveForwards(2.6);
+  wait(0.1, seconds);
+  Turn(90.0);
+  loaderthing.set(true);
   intakebottom.spin(forward);
   intakemiddle.spin(forward);
   intaketop.spin(forward);
-  wait(3, seconds);
-  DriveForward(-1);
-  scraper.set(true);
+  wait(500, msec);
+  SpinDriveForwards(0.8);
+  DriveForwards(-0.4);
+  loaderthing.set(false);
+  wait(0.1, seconds);
+  Turn(120.0);
+  wait(0.1, seconds);
+  DriveForwards(2.3);
+  wait(0.1, seconds);
+  Turn(-165.0);
+  intakebottom.stop();
+  intakemiddle.stop();
+  intaketop.stop();
+  storage.stop();
+  wait(0.1, seconds);
+  DriveForwards(1.9);
+  wait(0.1, seconds);
+  Turn(-105.0);
+  wait(0.1, seconds);
+  DriveForwards(2.0);
 
- // DriveForward(2.3, 30, 1);
-  // wait(0.1, seconds);
-  // Turn(-100.0);
-  // scraper.set(false);
-  // intakebottom.spin(forward);
-  // intakemiddle.spin(forward);
-  // intaketop.spin(forward);
-  // DriveForward(0.5, 50, 0.125);
-  // scraper.set(true);
-  // DriveForward(-0.1, 30, 0);
-  // wait(0.1, seconds);
-  // Turn(-120.0);
-  // wait(0.1, seconds);
-  // DriveForward(1.8, 30, 0.9);
-  // wait(0.1, seconds);
-  // Turn(-140.0);
-  // wait(0.1, seconds);
-  // DriveForward(2.5, 30, 1);
-  // wait(0.1, seconds);
-  // Turn(90.0);
-  // wait(0.1, seconds);
-  // DriveForward(2.0, 20, 0.6);
-  // wait(0.1, seconds);
-  // intakebottom.spin(forward);
-  // intakemiddle.spin(forward);
-  // intaketop.spin(reverse);
-  // storage.spin(forward);
-  // wait(1, seconds);
-  // storage.spin(reverse);
-  // wait(0.7, seconds);
-  // storage.spin(forward);
-  // wait(1, seconds);
-  // storage.spin(reverse);
-  // wait(0.7, seconds);
-  // storage.spin(forward);
-  while (true) {
-    if (Brain.Timer.time(seconds) > 14.5) {
-      intakebottom.stop();
-      intakemiddle.stop();
-      intaketop.stop();
-      storage.stop();
-      break;
-    }
-  }
-  //autonomous over
+  wait(0.2, seconds);
+  intakebottom.spin(forward);
+  intakemiddle.spin(forward);
+  intaketop.spin(reverse);
+  storage.spin(forward);
+  wait(1, seconds);
+  storage.spin(reverse);
+  wait(0.7, seconds);
+  storage.spin(forward);
+  wait(1, seconds);
+  storage.spin(reverse);
+  wait(0.7, seconds);
+  storage.spin(forward);
+}
+void driver() {
   frontleft.setStopping(coast);
   frontright.setStopping(coast);
   backleft.setStopping(coast);
@@ -448,6 +412,31 @@ int main() {
     wait(20, msec);
   }
 
+}
+int main() {
+  intakebottom.setStopping(brake);
+  intakemiddle.setStopping(brake);
+  intaketop.setStopping(brake);
+  storage.set`setStopping(brake);
+  intakebottom.setVelocity(100, percent);
+  intakemiddle.setVelocity(100, percent);
+  intaketop.setVelocity(100, percent);
+  storage.setVelocity(100, percent);
+  frontleft.setVelocity(100, percent);
+  frontright.setVelocity(100, percent);
+  backleft.setVelocity(100, percent);
+  backright.setVelocity(100, percent);
+
+  frontleft.setStopping(hold);
+  frontright.setStopping(hold);
+  backleft.setStopping(hold);
+  backright.setStopping(hold);
+  Teamwork.autonomous(auton);
+  Teamwork.drivercontrol(driver);
+
+
+
+  
 }
 
  
