@@ -2,22 +2,24 @@
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
 pros::Controller master(pros::E_CONTROLLER_MASTER);
+#include <cmath>
+#include <algorithm>
 
 pros::MotorGroup leftdrive({3, 2, 1}, pros::v5::MotorGears::blue);
 pros::MotorGroup rightdrive({-9, -8, -10}, pros::v5::MotorGears::blue);
 pros::Motor intake(5, pros::v5::MotorGears::blue);
 pros::Motor outtake(7, pros::v5::MotorGears::blue);
 
-pros::Rotation odometryright(4);
-pros::Rotation odometryleft(6);
+pros::Rotation pidright(4);
+pros::Rotation pidleft(6);
 
 // some constants, im not sure about wheelgap though as we havent put it on the bot yet
 const double wheeldiameter = 2;
 const double ticksperspin = 360.0;
-const double tickperinch = ticksperspin / (M_PI * wheeldiameter);
-const double wheelgap = 1;  // dist between odom wheel
+const double tickpin = ticksperspin / (M_PI * wheeldiameter);
+const double wheelgap = 1;  // dist between pid wheel
 
-struct odomstuff {
+struct pidstuff {
 	double leftpos = 0;
 	double rightpos = 0;
 	
@@ -27,19 +29,29 @@ struct odomstuff {
 	}
 	
 	void update() {
-		leftpos = odometryleft.get_position() / 100.0 / tickperinch;
-		rightpos = odometryright.get_position() / 100.0 / tickperinch;
+		leftpos = pidleft.get_position() / 100.0 / tickpin;
+		rightpos = pidright.get_position() / 100.0 / tickpin;
+	}
+	void updateturn() { // positive is turning right
+		leftpos = pidleft.get_position() / 100.0 / tickpin;
+		rightpos = -1*(pidright.get_position() / 100.0 / tickpin);
+	}
+
+	double turndegrees(double track_width) {
+
+		double radians = (2.0 * avgpos()) / track_width;
+		return radians * (180.0 / M_PI);
 	}
 	
 	double avgpos() {
 		return (leftpos + rightpos) / 2.0;
 	}
 	
-	double dif() { //this made me think of biff and eho from math is cool problems
+	double diff() { //this made me think of biff and eho from math is cool problems
 		return rightpos - leftpos;
 	}
 };
-
+double drivewheelgap = 12.5;
 int autonchoice = 0;
 
 
@@ -98,47 +110,149 @@ void competition_initialize() {
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void drive_forward(double dist, double speed) {
-	//so this resets the odometry positions to 0
-	odometryleft.reset_position();
-	odometryright.reset_position();
-	
-	odomstuff odom;
-	int target_ticks = (int)(dist * tickperinch);
-	//constants for drift might not work idk idk i dont know what im doing blah blah blah im the goat
-	const double drivemultiply = 1.2;
-	const double driftmultiply = 0.8;
-	const double minpow = 0.1;
-	const double maxpow = 1.0;
+ //should i remove speed?
+ //actually no, for small spaces speed slow  might be goooooooooooooooooo0o00o0o00o00o0o000o000o0000o0o00oo00o0o0o0o0o0o00o0o0o0o0o0o0o0o0d
+void driveforward(double dist, double speed) {
+	pidleft.reset_position();
+	pidright.reset_position();
 
-	while (odom.avgpos() < dist) {
-		odom.update();
-		
-		double current_position = odom.avgpos();
-		double position_error = dist - current_position;
-		double drift = odom.dif();
-		
-		// drive power
-		double base_power = (speed / 127.0) * (position_error / dist);
-		base_power = fmax(minpow, fmin(maxpow, base_power));
-		
-		// drift correction
-		double drift_correction = -drift * driftmultiply / 127.0;
-		drift_correction = fmax(-0.3, fmin(0.3, drift_correction));
-		
-		int left_voltage = (int)(127.0 * (base_power + drift_correction));
-		int right_voltage = (int)(127.0 * (base_power - drift_correction));
-		
-		leftdrive.move(left_voltage);
-		rightdrive.move(right_voltage);
-		
+	pidstuff pid;
+
+	// idk the tuning stuff isnt tuned
+	const double kppos = 0.1;
+	const double kipos = 0.0;
+	const double kdpos = 0.0;
+
+	const double kpdrift = 0.1;
+	const double kidrift = 0.0;
+	const double kddrift = 0.0;
+
+	const double posrange = 0.1; //in tolerance for endpoint
+	const int cyclereq = 30;
+
+	double posintegral = 0.0;
+	double pospreverr = 0.0;
+	double driftintegral = 0.0;
+	double driftpreverror = 0.0;
+
+	int stablecycles = 10;
+	std::int32_t prevtime = pros::millis();
+
+	while (true) {
+		pid.update();
+
+		std::int32_t currtime = pros::millis();
+		double dt = (currtime - prevtime) / 1000.0;
+		if (dt <= 0.0) dt = 0.01;
+		prevtime = currtime;
+
+		double pos = pid.avgpos();
+		double poserror = dist - pos;
+
+		posintegral += poserror * dt;
+		double posderiv = (poserror - pospreverr) / dt;
+		pospreverr = poserror;
+
+		double posoutput = kppos * poserror + kipos * posintegral + kdpos * posderiv;
+
+		double speedlimit = std::clamp(std::abs(speed), 1.0, 127.0);
+		posoutput = std::clamp(posoutput, -speedlimit, speedlimit);
+
+		double drifterror = pid.diff();
+		driftintegral += drifterror * dt;
+		double driftderiv = (drifterror - driftpreverror) / dt;
+		driftpreverror = drifterror;
+
+		double driftoutput = kpdrift * drifterror + kidrift * driftintegral + kddrift * driftderiv;
+		driftoutput = std::clamp(driftoutput, -40.0, 40.0);
+
+		int leftvoltage = (int)std::round(posoutput + driftoutput);
+		int rightvoltage = (int)std::round(posoutput - driftoutput);
+		leftvoltage = std::clamp(leftvoltage, -127, 127);
+		rightvoltage = std::clamp(rightvoltage, -127, 127);
+
+		leftdrive.move(leftvoltage);
+		rightdrive.move(rightvoltage);
+
+		double vel_est = posderiv; // inches/sec estimate
+		if (std::abs(poserror) < posrange && std::abs(vel_est) < 1.0) {
+			stablecycles++;
+		} else {
+			stablecycles = 0;
+		}
+		if (stablecycles >= cyclereq) break;
+
 		pros::delay(10);
 	}
-	
+
+	leftdrive.move(0);
+	rightdrive.move(0);
+}
+void turn(double degrees, double speed){
+	pidleft.reset_position();
+	pidright.reset_position();
+
+	pidstuff pid;
+
+	const double kpturn = 0.3;
+	const double kiturn = 0.0;
+	const double kdturn = 0.1;
+
+	const double angletol = 1.0; // degrees range to be considerd finished wit hturn
+	const int stablereq = 15;
+
+	double integral = 0.0;
+	double preverror = 0.0;
+	int stable = 0;
+	std::int32_t prevt = pros::millis();
+
+	while (true) {
+		pid.updateturn();
+
+		std::int32_t now = pros::millis();
+		double dt = (now - prevt) / 1000.0;
+		if (dt <= 0.0) dt = 0.01;
+		prevt = now;
+
+		double heading = pid.turndegrees(drivewheelgap);
+		double err = degrees - heading;
+
+		integral += err * dt;
+		double deriv = (err - preverror) / dt;
+		preverror = err;
+
+		double out = kpturn * err + kiturn * integral + kdturn * deriv;
+
+		double speedlim = std::clamp(std::abs(speed), 1.0, 127.0);
+		out = std::clamp(out, -speedlim, speedlim);
+
+		int leftvolt = (int)std::round(out);
+		int rightvolt = (int)std::round(-out);
+		leftvolt = std::clamp(leftvolt, -127, 127);
+		rightvolt = std::clamp(rightvolt, -127, 127);
+
+		leftdrive.move(leftvolt);
+		rightdrive.move(rightvolt);
+
+		double anglevelocity = deriv; // deg sec
+		if (std::abs(err) < angletol && std::abs(anglevelocity) < 5.0) {
+			stable++;
+		} else {
+			stable = 0;
+		}
+		if (stable >= stablereq) break;
+
+		pros::delay(10);
+	}
+
 	leftdrive.move(0);
 	rightdrive.move(0);
 }
 void autonomous() {
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	if (autonchoice == 0) {
 //default auton/no auton selected
 	}
