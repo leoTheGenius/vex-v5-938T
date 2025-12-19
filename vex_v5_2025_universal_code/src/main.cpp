@@ -17,7 +17,7 @@ pros::Rotation pidleft(6);
 const double wheeldiameter = 2;
 const double ticksperspin = 360.0;
 const double tickpin = ticksperspin / (M_PI * wheeldiameter);
-const double wheelgap = 1;  // dist between pid wheel
+const double wheelgap = 12.5;  // dist between pid wheel
 
 struct pidstuff {
 	double leftpos = 0;
@@ -37,9 +37,9 @@ struct pidstuff {
 		rightpos = -1*(pidright.get_position() / 100.0 / tickpin);
 	}
 
-	double turndegrees(double track_width) {
+	double turndegrees(double width) {
 
-		double radians = (2.0 * avgpos()) / track_width;
+		double radians = (2.0 * avgpos()) / width;
 		return radians * (180.0 / M_PI);
 	}
 	
@@ -174,8 +174,8 @@ void driveforward(double dist, double speed) {
 		leftdrive.move(leftvoltage);
 		rightdrive.move(rightvoltage);
 
-		double vel_est = posderiv; // inches/sec estimate
-		if (std::abs(poserror) < posrange && std::abs(vel_est) < 1.0) {
+		double velestim = posderiv; // inches/sec estimate
+		if (std::abs(poserror) < posrange && std::abs(velestim) < 1.0) {
 			stablecycles++;
 		} else {
 			stablecycles = 0;
