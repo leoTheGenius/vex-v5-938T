@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "vex_v5_2025_universal_code",
+    "project_name": "938tcode",
     "target": "v5",
     "templates": {
       "kernel": {
