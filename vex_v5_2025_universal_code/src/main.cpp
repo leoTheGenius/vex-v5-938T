@@ -12,7 +12,9 @@ pros::Motor outtake(7, pros::v5::MotorGears::blue);
 
 pros::Rotation pidright(4);
 pros::Rotation pidleft(6);
+enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, DOWN_MODE, RIGHT_MODE, X_MODE, Y_MODE, L1_MODE, L2_MODE, UP_MODE, LEFT_MODE};
 
+Mode activeMode = NONE;
 // some constants, im not sure about wheelgap though as we havent put it on the bot yet
 const double wheeldiameter = 2;
 const double ticksperspin = 360.0;
@@ -47,7 +49,7 @@ struct pidstuff {
 		return (leftpos + rightpos) / 2.0;
 	}
 	
-	double diff() { //this made me think of biff and eho from math is cool problems
+	double diff() { ////this made me think of biff and eho from math is cool problems
 		return rightpos - leftpos;
 	}
 };
@@ -127,7 +129,7 @@ void driveforward(double dist, double speed) {
 	const double kidrift = 0.0;
 	const double kddrift = 0.0;
 
-	const double posrange = 0.1; //in tolerance for endpoint
+	const double posrange = 0.1; //!in tolerance for endpoint
 	const int cyclereq = 30;
 
 	double posintegral = 0.0;
@@ -174,7 +176,7 @@ void driveforward(double dist, double speed) {
 		leftdrive.move(leftvoltage);
 		rightdrive.move(rightvoltage);
 
-		double velestim = posderiv; // inches/sec estimate
+		double velestim = posderiv; //! inches/sec estimate
 		if (std::abs(poserror) < posrange && std::abs(velestim) < 1.0) {
 			stablecycles++;
 		} else {
@@ -198,7 +200,7 @@ void turn(double degrees, double speed){
 	const double kiturn = 0.0;
 	const double kdturn = 0.1;
 
-	const double angletol = 1.0; // degrees range to be considerd finished wit hturn
+	const double angletol = 1.0; //! degrees range to be considerd finished wit hturn
 	const int stablereq = 15;
 
 	double integral = 0.0;
@@ -302,26 +304,43 @@ void opcontrol() {
 		currl2 = master.get_digital(DIGITAL_L2);
 		currr1 = master.get_digital(DIGITAL_R1);
 		currr2 = master.get_digital(DIGITAL_R2);
-		if (curra && !preva) {
-			intake.move_velocity(600);
-		} else if (!curra && preva) {
+		if ((curra == true) && (preva == false)) {
+      		activeMode = (activeMode == A_MODE) ? NONE : A_MODE;
+      		if (activeMode == A_MODE) {
+        		intake.move_velocity(600);
+    		}
+      	} else {
 			intake.move_velocity(0);
-		}
-		if (currb && !prevb) {
-			intake.move_velocity(-600);
-		} else if (!currb && prevb) {
-			intake.move_velocity(0);
-		}
-		if (curry && !prevy) {
-			outtake.move_velocity(600);
-		} else if (!curry && prevy) {
-			outtake.move_velocity(0);
-		}
-		if (currx && !prevx) {
-			outtake.move_velocity(-600);
-		} else if (!currx && prevx) {
-			outtake.move_velocity(0);
-		}
+	  	}
+	  	
+		if ((currb == true) && (prevb == false)) {
+			activeMode = (activeMode == B_MODE) ? NONE : B_MODE;
+			if (activeMode == B_MODE) {
+				outtake.move_velocity(600);
+			}
+		} else {
+				outtake.move_velocity(0);
+			}
+		
+		if ((currx == true) && (prevx == false)) {
+			activeMode = (activeMode == X_MODE) ? NONE : X_MODE;
+			if (activeMode == X_MODE) {
+				intake.move_velocity(-600);
+			}
+		} else {
+				intake.move_velocity(0);
+			}
+		
+		if ((curry == true) && (prevy == false)) {
+			activeMode = (activeMode == Y_MODE) ? NONE : Y_MODE;
+			if (activeMode == Y_MODE) {
+				outtake.move_velocity(-600);
+			}
+		} else {
+				outtake.move_velocity(0);
+			}
+		
+		
         
 		// update previous button states
 		preva = curra;
