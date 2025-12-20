@@ -308,38 +308,34 @@ void opcontrol() {
       		activeMode = (activeMode == A_MODE) ? NONE : A_MODE;
       		if (activeMode == A_MODE) {
         		intake.move_velocity(600);
-    		}
-      	} else {
-			intake.move_velocity(0);
-	  	}
-	  	
-		if ((currb == true) && (prevb == false)) {
+    		} else {
+				intake.move_velocity(0);
+	  		}
+		}
+		else if ((currb == true) && (prevb == false)) {
 			activeMode = (activeMode == B_MODE) ? NONE : B_MODE;
 			if (activeMode == B_MODE) {
 				outtake.move_velocity(600);
-			}
-		} else {
+			} else {
 				outtake.move_velocity(0);
 			}
-		
-		if ((currx == true) && (prevx == false)) {
+		}
+		else if ((currx == true) && (prevx == false)) {
 			activeMode = (activeMode == X_MODE) ? NONE : X_MODE;
 			if (activeMode == X_MODE) {
 				intake.move_velocity(-600);
-			}
-		} else {
+			} else {
 				intake.move_velocity(0);
 			}
-		
-		if ((curry == true) && (prevy == false)) {
+		}
+		else if ((curry == true) && (prevy == false)) {
 			activeMode = (activeMode == Y_MODE) ? NONE : Y_MODE;
 			if (activeMode == Y_MODE) {
 				outtake.move_velocity(-600);
-			}
-		} else {
+			} else {
 				outtake.move_velocity(0);
 			}
-		
+		}
 		
         
 		// update previous button states
