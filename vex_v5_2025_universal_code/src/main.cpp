@@ -1,6 +1,6 @@
 #include "main.h"
 #include "pros/motors.hpp"
-#include "pros/rotation.hpp"
+// #include "pros/rotation.hpp"
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 #include <cmath>
 #include <algorithm>
@@ -10,16 +10,16 @@ pros::MotorGroup rightdrive({-9, -8, -10}, pros::v5::MotorGears::blue);
 pros::Motor intake(5, pros::v5::MotorGears::blue);
 pros::Motor outtake(7, pros::v5::MotorGears::blue);
 
-pros::Rotation pidright(4);
-pros::Rotation pidleft(6);
-enum Mode { NONE, A_MODE, B_MODE, R1_MODE, R2_MODE, DOWN_MODE, RIGHT_MODE, X_MODE, Y_MODE, L1_MODE, L2_MODE, UP_MODE, LEFT_MODE};
+// pros::Rotation pidright(4);
+// pros::Rotation pidleft(6);
+enum Mode { no, a, b, r1, r2, down, right, x, y, l1, l2, up, left};
 
-Mode activeMode = NONE;
-// some constants, im not sure about wheelgap though as we havent put it on the bot yet
+Mode activeMode = no;
+// some constants, im not sure about wheelgap though as we haven't put it on the bot yet
 const double wheeldiameter = 2;
 const double ticksperspin = 360.0;
 const double tickpin = ticksperspin / (M_PI * wheeldiameter);
-const double wheelgap = 12.5;  // dist between pid wheel
+const double wheelgap = 12.5;  // dist between pid wheel,im just using drivetrain wheels as pid wheels
 
 struct pidstuff {
 	double leftpos = 0;
@@ -31,12 +31,12 @@ struct pidstuff {
 	}
 	
 	void update() {
-		leftpos = pidleft.get_position() / 100.0 / tickpin;
-		rightpos = pidright.get_position() / 100.0 / tickpin;
+		leftpos = leftdrive.get_position() / 100.0 / tickpin;
+		rightpos = rightdrive.get_position() / 100.0 / tickpin;
 	}
 	void updateturn() { // positive is turning right
-		leftpos = pidleft.get_position() / 100.0 / tickpin;
-		rightpos = -1*(pidright.get_position() / 100.0 / tickpin);
+		leftpos = leftdrive.get_position() / 100.0 / tickpin;
+		rightpos = -1*(rightdrive.get_position() / 100.0 / tickpin);
 	}
 
 	double turndegrees(double width) {
@@ -114,9 +114,9 @@ void competition_initialize() {
  */
  //should i remove speed?
  //actually no, for small spaces speed slow  might be goooooooooooooooooo0o00o0o00o00o0o000o000o0000o0o00oo00o0o0o0o0o0o00o0o0o0o0o0o0o0o0d
-void driveforward(double dist, double speed) {
-	pidleft.reset_position();
-	pidright.reset_position();
+void driveforward(double dist, double speed) {//!inches
+	leftdrive.tare_position();
+	rightdrive.tare_position();
 
 	pidstuff pid;
 
@@ -125,7 +125,7 @@ void driveforward(double dist, double speed) {
 	const double kipos = 0.0;
 	const double kdpos = 0.0;
 
-	const double kpdrift = 0.1;
+	const double kpdrift = 0.0;
 	const double kidrift = 0.0;
 	const double kddrift = 0.0;
 
@@ -191,10 +191,15 @@ void driveforward(double dist, double speed) {
 	rightdrive.move(0);
 }
 void turn(double degrees, double speed){
-	pidleft.reset_position();
-	pidright.reset_position();
+	// reset drivetrain motor encoder positions before starting the turn
+	leftdrive.tare_position();
+	rightdrive.tare_position();
+
+	// pidleft.reset_position();
+	// pidright.reset_position();
 
 	pidstuff pid;
+	pid.reset();
 
 	const double kpturn = 0.3;
 	const double kiturn = 0.0;
@@ -281,6 +286,11 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	driveforward(48, 127);
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -305,32 +315,32 @@ void opcontrol() {
 		currr1 = master.get_digital(DIGITAL_R1);
 		currr2 = master.get_digital(DIGITAL_R2);
 		if ((curra == true) && (preva == false)) {
-      		activeMode = (activeMode == A_MODE) ? NONE : A_MODE;
-      		if (activeMode == A_MODE) {
+      		activeMode = (activeMode == a) ? no : a;
+      		if (activeMode == a) {
         		intake.move_velocity(600);
     		} else {
 				intake.move_velocity(0);
 	  		}
 		}
 		else if ((currb == true) && (prevb == false)) {
-			activeMode = (activeMode == B_MODE) ? NONE : B_MODE;
-			if (activeMode == B_MODE) {
+			activeMode = (activeMode == b) ? no : b;
+			if (activeMode == b) {
 				outtake.move_velocity(600);
 			} else {
 				outtake.move_velocity(0);
 			}
 		}
 		else if ((currx == true) && (prevx == false)) {
-			activeMode = (activeMode == X_MODE) ? NONE : X_MODE;
-			if (activeMode == X_MODE) {
+			activeMode = (activeMode == x) ? no : x;
+			if (activeMode == x) {
 				intake.move_velocity(-600);
 			} else {
 				intake.move_velocity(0);
 			}
 		}
 		else if ((curry == true) && (prevy == false)) {
-			activeMode = (activeMode == Y_MODE) ? NONE : Y_MODE;
-			if (activeMode == Y_MODE) {
+			activeMode = (activeMode == y) ? no : y;
+			if (activeMode == y) {
 				outtake.move_velocity(-600);
 			} else {
 				outtake.move_velocity(0);
