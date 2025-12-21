@@ -16,7 +16,7 @@ enum Mode { no, a, b, r1, r2, down, right, x, y, l1, l2, up, left};
 
 Mode activeMode = no;
 // some constants, im not sure about wheelgap though as we haven't put it on the bot yet
-const double wheeldiameter = 2;
+const double wheeldiameter = 3.75;
 const double ticksperspin = 360.0;
 const double tickpin = ticksperspin / (M_PI * wheeldiameter);
 const double wheelgap = 12.5;  // dist between pid wheel,im just using drivetrain wheels as pid wheels
@@ -31,24 +31,24 @@ struct pidstuff {
 	}
 	
 	void update() {
-		leftpos = leftdrive.get_position() / 100.0 / tickpin;
-		rightpos = rightdrive.get_position() / 100.0 / tickpin;
+		leftpos = leftdrive.get_position();
+		rightpos = rightdrive.get_position();
 	}
 	void updateturn() { // positive is turning right
-		leftpos = leftdrive.get_position() / 100.0 / tickpin;
-		rightpos = -1*(rightdrive.get_position() / 100.0 / tickpin);
+		leftpos = leftdrive.get_position()/tickpin;
+		rightpos = -1*(rightdrive.get_position())/tickpin;
 	}
 
 	double turndegrees(double width) {
-
-		double radians = (2.0 * avgpos()) / width;
-		return radians * (180.0 / M_PI);
+		return avgturn() * wheeldiameter / width;
 	}
 	
 	double avgpos() {
 		return (leftpos + rightpos) / 2.0;
 	}
-	
+	double avgturn() {
+		return (leftpos - rightpos) / 2.0;
+	}
 	double diff() { ////this made me think of biff and eho from math is cool problems
 		return rightpos - leftpos;
 	}
@@ -117,20 +117,28 @@ void competition_initialize() {
 void driveforward(double dist, double speed) {//!inches
 	leftdrive.tare_position();
 	rightdrive.tare_position();
-
+	
 	pidstuff pid;
 
 	// idk the tuning stuff isnt tuned
-	const double kppos = 0.1;
+	const double kppos = 0.0;
 	const double kipos = 0.0;
 	const double kdpos = 0.0;
 
 	const double kpdrift = 0.0;
 	const double kidrift = 0.0;
 	const double kddrift = 0.0;
+ 
+	const double posrange = 0.4; //!in tolerance for endpoint
+	const int cyclereq = 15;
 
-	const double posrange = 0.1; //!in tolerance for endpoint
-	const int cyclereq = 30;
+	// convert tolerances and targets to degrees (motors report degrees)
+	const double posrange_deg_factor = tickpin; // degrees per inch
+	const double posrange_deg = posrange * posrange_deg_factor; // degrees tolerance
+	const double vel_thresh_deg = 1.0 * posrange_deg_factor; // ~1 inch/sec -> degrees/sec
+
+	// target distance in degrees
+	double targetDeg = dist * tickpin;
 
 	double posintegral = 0.0;
 	double pospreverr = 0.0;
@@ -142,15 +150,22 @@ void driveforward(double dist, double speed) {//!inches
 
 	while (true) {
 		pid.update();
-
 		std::int32_t currtime = pros::millis();
 		double dt = (currtime - prevtime) / 1000.0;
 		if (dt <= 0.0) dt = 0.01;
 		prevtime = currtime;
 
-		double pos = pid.avgpos();
-		double poserror = dist - pos;
-
+		double pos = pid.avgpos(); // wheel degrees
+		double poserror = targetDeg - pos; // degrees error
+		if (poserror > 0) {
+			master.print(2, 0, "undershoot");
+		}
+		else {
+			master.print(2, 0, "overshoot");
+			if (posintegral > 0) {
+				posintegral = 0.0;
+			}
+		}
 		posintegral += poserror * dt;
 		double posderiv = (poserror - pospreverr) / dt;
 		pospreverr = poserror;
@@ -176,8 +191,8 @@ void driveforward(double dist, double speed) {//!inches
 		leftdrive.move(leftvoltage);
 		rightdrive.move(rightvoltage);
 
-		double velestim = posderiv; //! inches/sec estimate
-		if (std::abs(poserror) < posrange && std::abs(velestim) < 1.0) {
+		double velestim = posderiv; //! degrees/sec estimate
+		if (std::abs(poserror) < posrange_deg && std::abs(velestim) < vel_thresh_deg) {
 			stablecycles++;
 		} else {
 			stablecycles = 0;
@@ -201,11 +216,11 @@ void turn(double degrees, double speed){
 	pidstuff pid;
 	pid.reset();
 
-	const double kpturn = 0.3;
+	const double kpturn = 0.0;
 	const double kiturn = 0.0;
-	const double kdturn = 0.1;
+	const double kdturn = 0.0;
 
-	const double angletol = 1.0; //! degrees range to be considerd finished wit hturn
+	const double angletol = 5.0; //! degrees range to be considerd finished wit hturn
 	const int stablereq = 15;
 
 	double integral = 0.0;
@@ -290,7 +305,7 @@ void opcontrol() {
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	driveforward(48, 127);
+	driveforward(24, 127);
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -322,25 +337,25 @@ void opcontrol() {
 				intake.move_velocity(0);
 	  		}
 		}
-		else if ((currb == true) && (prevb == false)) {
-			activeMode = (activeMode == b) ? no : b;
-			if (activeMode == b) {
+		else if ((currleft == true) && (prevleft == false)) {
+			activeMode = (activeMode == left) ? no : left;
+			if (activeMode == left) {
 				outtake.move_velocity(600);
 			} else {
 				outtake.move_velocity(0);
 			}
 		}
-		else if ((currx == true) && (prevx == false)) {
-			activeMode = (activeMode == x) ? no : x;
-			if (activeMode == x) {
+		else if ((currb == true) && (prevb == false)) {
+			activeMode = (activeMode == b) ? no : b;
+			if (activeMode == b) {
 				intake.move_velocity(-600);
 			} else {
 				intake.move_velocity(0);
 			}
 		}
-		else if ((curry == true) && (prevy == false)) {
-			activeMode = (activeMode == y) ? no : y;
-			if (activeMode == y) {
+		else if ((currdown == true) && (prevdown == false)) {
+			activeMode = (activeMode == down) ? no : down;
+			if (activeMode == down) {
 				outtake.move_velocity(-600);
 			} else {
 				outtake.move_velocity(0);
