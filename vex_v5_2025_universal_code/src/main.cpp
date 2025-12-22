@@ -1,4 +1,5 @@
 #include "main.h"
+#include "pros/motors.h"
 #include "pros/motors.hpp"
 // #include "pros/rotation.hpp"
 pros::Controller master(pros::E_CONTROLLER_MASTER);
@@ -8,7 +9,7 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup leftdrive({3, 2, 1}, pros::v5::MotorGears::blue);
 pros::MotorGroup rightdrive({-9, -8, -10}, pros::v5::MotorGears::blue);
 pros::Motor intake(5, pros::v5::MotorGears::blue);
-pros::Motor outtake(7, pros::v5::MotorGears::blue);
+pros::Motor outtake(-7, pros::v5::MotorGears::blue);
 
 // pros::Rotation pidright(4);
 // pros::Rotation pidleft(6);
@@ -121,11 +122,11 @@ void driveforward(double dist, double speed) {//!inches
 	pidstuff pid;
 
 	// idk the tuning stuff isnt tuned
-	const double kppos = 0.0;
+	const double kppos = 0.2;
 	const double kipos = 0.0;
 	const double kdpos = 0.0;
 
-	const double kpdrift = 0.0;
+	const double kpdrift = 0.1;
 	const double kidrift = 0.0;
 	const double kddrift = 0.0;
  
@@ -157,11 +158,7 @@ void driveforward(double dist, double speed) {//!inches
 
 		double pos = pid.avgpos(); // wheel degrees
 		double poserror = targetDeg - pos; // degrees error
-		if (poserror > 0) {
-			master.print(2, 0, "undershoot");
-		}
-		else {
-			master.print(2, 0, "overshoot");
+		if (poserror < 0) {
 			if (posintegral > 0) {
 				posintegral = 0.0;
 			}
@@ -276,6 +273,7 @@ void autonomous() {
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	if (autonchoice == 0) {
+		driveforward(24, 127);
 //default auton/no auton selected
 	}
 	if (autonchoice == 1) {
@@ -309,7 +307,7 @@ void opcontrol() {
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	bool preva = false, prevb = false, prevy = false, prevx = false, prevleft = false, prevright = false, prevup = false, prevdown = false, prevl1 = false, prevl2 = false, prevr1 = false, prevr2 = false;
 	bool curra = false, currb = false, curry = false, currx = false, currleft = false, currright = false, currup = false, currdown = false, currl1 = false, currl2 = false, currr1 = false, currr2 = false;
 	while (true) {
@@ -341,16 +339,20 @@ void opcontrol() {
 			activeMode = (activeMode == left) ? no : left;
 			if (activeMode == left) {
 				outtake.move_velocity(600);
+				intake.move_velocity(600);
 			} else {
 				outtake.move_velocity(0);
+				intake.move_velocity(0);
 			}
 		}
 		else if ((currb == true) && (prevb == false)) {
 			activeMode = (activeMode == b) ? no : b;
 			if (activeMode == b) {
 				intake.move_velocity(-600);
+				outtake.move_velocity(-600);
 			} else {
 				intake.move_velocity(0);
+				outtake.move_velocity(0);
 			}
 		}
 		else if ((currdown == true) && (prevdown == false)) {
