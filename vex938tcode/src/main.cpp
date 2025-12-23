@@ -36,8 +36,8 @@ struct pidstuff {
 		rightpos = rightdrive.get_position();
 	}
 	void updateturn() { // positive is turning right
-		leftpos = leftdrive.get_position()/tickpin;
-		rightpos = -1*(rightdrive.get_position())/tickpin;
+		leftpos = leftdrive.get_position();
+		rightpos = rightdrive.get_position();
 	}
 
 	double turndegrees(double width) {
@@ -50,7 +50,7 @@ struct pidstuff {
 	double avgturn() {
 		return (leftpos - rightpos) / 2.0;
 	}
-	double diff() { ////this made me think of biff and eho from math is cool problems
+	double diff() {
 		return rightpos - leftpos;
 	}
 };
@@ -122,24 +122,23 @@ void driveforward(double dist, double speed) {//!inches
 	pidstuff pid;
 
 	// idk the tuning stuff isnt tuned
-	const double kppos = 0.2;
-	const double kipos = 0.0;
-	const double kdpos = 0.0;
+	const double kppos = 0.37;
+	const double kipos = 0.04;
+	const double kdpos = 0.08;
 
-	const double kpdrift = 0.1;
-	const double kidrift = 0.0;
-	const double kddrift = 0.0;
+	const double kpdrift = 0.3;
+	const double kidrift = 0.02;
+	const double kddrift = 0.03;
  
-	const double posrange = 0.4; //!in tolerance for endpoint
+	const double posrange = 0.2; //!in tolerance for endpoint
 	const int cyclereq = 15;
 
-	// convert tolerances and targets to degrees (motors report degrees)
-	const double posrange_deg_factor = tickpin; // degrees per inch
-	const double posrange_deg = posrange * posrange_deg_factor; // degrees tolerance
-	const double vel_thresh_deg = 1.0 * posrange_deg_factor; // ~1 inch/sec -> degrees/sec
+
+	const double toldeg = posrange * tickpin; 
+	const double veloestimthresh = 1.0 * tickpin; 
 
 	// target distance in degrees
-	double targetDeg = dist * tickpin;
+	double targetdeg = dist * tickpin;
 
 	double posintegral = 0.0;
 	double pospreverr = 0.0;
@@ -157,7 +156,7 @@ void driveforward(double dist, double speed) {//!inches
 		prevtime = currtime;
 
 		double pos = pid.avgpos(); // wheel degrees
-		double poserror = targetDeg - pos; // degrees error
+		double poserror = targetdeg - pos; // degrees error
 		if (poserror < 0) {
 			if (posintegral > 0) {
 				posintegral = 0.0;
@@ -185,11 +184,11 @@ void driveforward(double dist, double speed) {//!inches
 		leftvoltage = std::clamp(leftvoltage, -127, 127);
 		rightvoltage = std::clamp(rightvoltage, -127, 127);
 
-		leftdrive.move(leftvoltage);
-		rightdrive.move(rightvoltage);
+		leftdrive.move(leftvoltage*0.8);
+		rightdrive.move(rightvoltage*0.8);
 
 		double velestim = posderiv; //! degrees/sec estimate
-		if (std::abs(poserror) < posrange_deg && std::abs(velestim) < vel_thresh_deg) {
+		if (std::abs(poserror) < toldeg && std::abs(velestim) < veloestimthresh) {
 			stablecycles++;
 		} else {
 			stablecycles = 0;
@@ -213,9 +212,9 @@ void turn(double degrees, double speed){
 	pidstuff pid;
 	pid.reset();
 
-	const double kpturn = 0.0;
+	const double kpturn = 0.7;
 	const double kiturn = 0.0;
-	const double kdturn = 0.0;
+	const double kdturn = 0.1;
 
 	const double angletol = 5.0; //! degrees range to be considerd finished wit hturn
 	const int stablereq = 15;
@@ -224,6 +223,8 @@ void turn(double degrees, double speed){
 	double preverror = 0.0;
 	int stable = 0;
 	std::int32_t prevt = pros::millis();
+	std::int32_t startt = prevt;
+	const std::int32_t timeout_ms = 8000; // safety timeout to avoid infinite spin
 
 	while (true) {
 		pid.updateturn();
@@ -235,6 +236,16 @@ void turn(double degrees, double speed){
 
 		double heading = pid.turndegrees(drivewheelgap);
 		double err = degrees - heading;
+
+		// Diagnostic output to controller for debugging
+		master.print(2, 0, "L: %.2f R: %.2f  ", pid.leftpos, pid.rightpos);
+		master.print(3, 0, "hdg: %.2f err: %.2f dt: %.3f", heading, err, dt);
+
+		// safety timeout
+		if ((now - startt) > timeout_ms) {
+			master.print(4, 0, "Turn timeout (ms=%d)", timeout_ms);
+			break;
+		}
 
 		integral += err * dt;
 		double deriv = (err - preverror) / dt;
@@ -259,7 +270,9 @@ void turn(double degrees, double speed){
 		} else {
 			stable = 0;
 		}
-		if (stable >= stablereq) break;
+		if (stable >= stablereq) {
+			break;
+		};
 
 		pros::delay(10);
 	}
@@ -268,10 +281,10 @@ void turn(double degrees, double speed){
 	rightdrive.move(0);
 }
 void autonomous() {
-	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	if (autonchoice == 0) {
 		driveforward(24, 127);
 //default auton/no auton selected
@@ -299,11 +312,11 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	driveforward(24, 127);
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	turn(90, 127);
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -331,8 +344,10 @@ void opcontrol() {
       		activeMode = (activeMode == a) ? no : a;
       		if (activeMode == a) {
         		intake.move_velocity(600);
+				outtake.move_velocity(0);
     		} else {
 				intake.move_velocity(0);
+				outtake.move_velocity(0);
 	  		}
 		}
 		else if ((currleft == true) && (prevleft == false)) {
@@ -359,8 +374,10 @@ void opcontrol() {
 			activeMode = (activeMode == down) ? no : down;
 			if (activeMode == down) {
 				outtake.move_velocity(-600);
+				intake.move_velocity(0);
 			} else {
 				outtake.move_velocity(0);
+				intake.move_velocity(0);
 			}
 		}
 		
@@ -382,3 +399,7 @@ void opcontrol() {
 		pros::delay(20);
 	}
 }
+
+
+
+
