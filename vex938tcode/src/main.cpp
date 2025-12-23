@@ -17,7 +17,7 @@ enum Mode { no, a, b, r1, r2, down, right, x, y, l1, l2, up, left};
 
 Mode activeMode = no;
 // some constants, im not sure about wheelgap though as we haven't put it on the bot yet
-const double wheeldiameter = 3.75;
+const double wheeldiameter = 3.25;
 const double ticksperspin = 360.0;
 const double tickpin = ticksperspin / (M_PI * wheeldiameter);
 const double wheelgap = 12.5;  // dist between pid wheel,im just using drivetrain wheels as pid wheels
