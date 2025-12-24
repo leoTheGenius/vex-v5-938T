@@ -115,22 +115,18 @@ void competition_initialize() {
  */
  //should i remove speed?
  //actually no, for small spaces speed slow  might be goooooooooooooooooo0o00o0o00o00o0o000o000o0000o0o00oo00o0o0o0o0o0o00o0o0o0o0o0o0o0o0d
-void driveforward(double dist, double speed) {//!inches
+void driveforward(double dist, double speed, const double posrange = 0.5, const double speedmulti = 1.0, const double kppos = 0.171, const double kipos = 0.037, const double kdpos = 0.1) {//!inches
 	leftdrive.tare_position();
 	rightdrive.tare_position();
 	
 	pidstuff pid;
-
-	// idk the tuning stuff isnt tuned
-	const double kppos = 0.37;
-	const double kipos = 0.04;
-	const double kdpos = 0.08;
+	pid.reset();
 
 	const double kpdrift = 0.3;
-	const double kidrift = 0.02;
+	const double kidrift = 0.03;
 	const double kddrift = 0.03;
  
-	const double posrange = 0.2; //!in tolerance for endpoint
+	// const double posrange = 0.2; //!in tolerance for endpoint
 	const int cyclereq = 15;
 
 
@@ -152,9 +148,9 @@ void driveforward(double dist, double speed) {//!inches
 		pid.update();
 		std::int32_t currtime = pros::millis();
 		double dt = (currtime - prevtime) / 1000.0;
+		dt *= speedmulti;
 		if (dt <= 0.0) dt = 0.01;
 		prevtime = currtime;
-
 		double pos = pid.avgpos(); // wheel degrees
 		double poserror = targetdeg - pos; // degrees error
 		if (poserror < 0) {
@@ -162,12 +158,11 @@ void driveforward(double dist, double speed) {//!inches
 				posintegral = 0.0;
 			}
 		}
+		master.print(0, 0, "error: %f", poserror);
 		posintegral += poserror * dt;
 		double posderiv = (poserror - pospreverr) / dt;
 		pospreverr = poserror;
-
 		double posoutput = kppos * poserror + kipos * posintegral + kdpos * posderiv;
-
 		double speedlimit = std::clamp(std::abs(speed), 1.0, 127.0);
 		posoutput = std::clamp(posoutput, -speedlimit, speedlimit);
 
@@ -181,6 +176,8 @@ void driveforward(double dist, double speed) {//!inches
 
 		int leftvoltage = (int)std::round(posoutput + driftoutput);
 		int rightvoltage = (int)std::round(posoutput - driftoutput);
+		leftvoltage *= speedmulti;
+		rightvoltage *= speedmulti;
 		leftvoltage = std::clamp(leftvoltage, -127, 127);
 		rightvoltage = std::clamp(rightvoltage, -127, 127);
 
@@ -201,7 +198,56 @@ void driveforward(double dist, double speed) {//!inches
 	leftdrive.move(0);
 	rightdrive.move(0);
 }
-void turn(double degrees, double speed){
+void nopid(double dist, double speed = 100.0) {
+	leftdrive.tare_position();
+	rightdrive.tare_position();
+	
+	const double tickpin = ticksperspin / (M_PI * wheeldiameter);
+	double targetdeg = dist * tickpin;
+	
+	while (leftdrive.get_position() < targetdeg || rightdrive.get_position() < targetdeg) {
+		leftdrive.move(127*speed/100.0);
+		rightdrive.move(127*speed/100.0);
+	}
+	leftdrive.move(0);
+	rightdrive.move(0);
+}
+void nopidback(double dist, double speed = 100.0) {
+	leftdrive.tare_position();
+	rightdrive.tare_position();
+	
+	const double tickpin = ticksperspin / (M_PI * wheeldiameter);
+	double targetdeg = dist * tickpin;
+	
+	while (leftdrive.get_position() > targetdeg || rightdrive.get_position() > targetdeg) {
+		leftdrive.move(-127*speed/100.0);
+		rightdrive.move(-127*speed/100.0);
+	}
+	leftdrive.move(0);
+	rightdrive.move(0);
+}
+void oneside(double dist, bool leftside, double speed = 50.0) {
+	leftdrive.tare_position();
+	rightdrive.tare_position();
+	
+	const double tickpin = ticksperspin / (M_PI * wheeldiameter);
+	double targetdeg = dist * tickpin;
+	
+	if (leftside) {
+		while (leftdrive.get_position() < targetdeg) {
+			leftdrive.move(127*speed/100.0);
+			rightdrive.move(0);
+		}
+	} else {
+		while (rightdrive.get_position() < targetdeg) {
+			leftdrive.move(0);
+			rightdrive.move(127*speed/100.0);
+		}
+	}
+	leftdrive.move(0);
+	rightdrive.move(0);
+}
+void turn(double degrees, double speed, double angletol = 0.7){
 	// reset drivetrain motor encoder positions before starting the turn
 	leftdrive.tare_position();
 	rightdrive.tare_position();
@@ -212,11 +258,11 @@ void turn(double degrees, double speed){
 	pidstuff pid;
 	pid.reset();
 
-	const double kpturn = 0.7;
-	const double kiturn = 0.0;
+	const double kpturn = 2.1;
+	const double kiturn = 0.2;
 	const double kdturn = 0.1;
 
-	const double angletol = 5.0; //! degrees range to be considerd finished wit hturn
+	// const double angletol = 0.7; //! degrees range to be considerd finished wit hturn
 	const int stablereq = 15;
 
 	double integral = 0.0;
@@ -238,8 +284,7 @@ void turn(double degrees, double speed){
 		double err = degrees - heading;
 
 		// Diagnostic output to controller for debugging
-		master.print(2, 0, "L: %.2f R: %.2f  ", pid.leftpos, pid.rightpos);
-		master.print(3, 0, "hdg: %.2f err: %.2f dt: %.3f", heading, err, dt);
+		master.print(0, 0, "heading: %f", heading);
 
 		// safety timeout
 		if ((now - startt) > timeout_ms) {
@@ -281,20 +326,41 @@ void turn(double degrees, double speed){
 	rightdrive.move(0);
 }
 void autonomous() {
-	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	intake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	if (autonchoice == 0) {
-		driveforward(24, 127);
-//default auton/no auton selected
+		//!default auton/no auton selected
 	}
 	if (autonchoice == 1) {
-//left auton
-    } else if (autonchoice == 2) {
-//right auton
+		//!left auton
+		driveforward(29, 97, 0.9);
+		turn(-90, 97, 1.7);
+		nopid(4);
+		pros::delay(1000);
+		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+		pros::delay(1000);
+		nopid(2, 50);
+		oneside(25, false);
+		nopid(6, 60);
+		pros::delay(1000);
+		turn(175, 97, 9);
+		driveforward(-25, 120, 1.8);
+	} else if (autonchoice == 2) {
+		//!right auton
+		driveforward(29, 97, 0.9);
+		turn(90, 97, 1.7);
+		nopid(4);
+		pros::delay(1000);
+		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+		pros::delay(1000);
+		nopid(2, 50);
+		oneside(27, true);
+		driveforward(35, 127, 1.8);
+
     } else if (autonchoice == 3) {
-//skills auton
+	//!skills auton
     }
 }
 
@@ -312,11 +378,18 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	intake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	turn(90, 127);
+	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	driveforward(29, 97, 0.9);
+	turn(90, 97, 1.7);
+	nopid(4);
+	pros::delay(1000);
+	driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+	pros::delay(1000);
+	nopid(2, 50);
+	oneside(27, true);
+	driveforward(35, 127, 1.8);
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
