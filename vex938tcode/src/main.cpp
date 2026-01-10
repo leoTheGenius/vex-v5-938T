@@ -1,6 +1,7 @@
 #include "main.h"
 #include "pros/motors.h"
 #include "pros/motors.hpp"
+#include <cstdint>
 // #include "pros/rotation.hpp"
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 #include <cmath>
@@ -80,6 +81,7 @@ void disabled() {}
  * starts.
  */
 void competition_initialize() {
+	master.clear();
 	//this is the amazing auton selector. sadly i dont have an auton to use it on yet. also, how do i test it without the field control system?
 	master.print(0, 0, "select auton:");
     master.print(1, 0, "a=left b=right y=skils otherwise none by default");
@@ -140,7 +142,7 @@ void driveforward(double dist, double speed, const double posrange = 0.5, const 
 	double pospreverr = 0.0;
 	double driftintegral = 0.0;
 	double driftpreverror = 0.0;
-
+	std::int32_t begintime = pros::millis();
 	int stablecycles = 10;
 	std::int32_t prevtime = pros::millis();
 
@@ -183,7 +185,10 @@ void driveforward(double dist, double speed, const double posrange = 0.5, const 
 
 		leftdrive.move(leftvoltage*0.8);
 		rightdrive.move(rightvoltage*0.8);
-
+		if (currtime - begintime > 4000) {
+			master.print(4, 0, "timeout");
+			break;
+		}	
 		double velestim = posderiv; //! degrees/sec estimate
 		if (std::abs(poserror) < toldeg && std::abs(velestim) < veloestimthresh) {
 			stablecycles++;
@@ -332,12 +337,14 @@ void autonomous() {
 	outtake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	if (autonchoice == 0) {
 		//!default auton/no auton selected
+		nopidback(10, 60);
+		nopid(20, 100);
 	}
 	if (autonchoice == 1) {
 		//!left auton
 		driveforward(29, 97, 0.9);
 		turn(-90, 97, 1.7);
-		nopid(4);
+		driveforward(4, 127, 1.5);
 		pros::delay(1000);
 		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
 		pros::delay(1000);
@@ -350,14 +357,16 @@ void autonomous() {
 	} else if (autonchoice == 2) {
 		//!right auton
 		driveforward(29, 97, 0.9);
-		turn(90, 97, 1.7);
-		nopid(4);
-		pros::delay(1000);
+		turn(90, 87, 1.7);
+		intake.move(600);
 		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+		outtake.move(600);
 		pros::delay(1000);
 		nopid(2, 50);
 		oneside(27, true);
 		driveforward(35, 127, 1.8);
+		outtake.move(-600);
+		intake.move(-600);
 
     } else if (autonchoice == 3) {
 	//!skills auton
@@ -378,18 +387,18 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	driveforward(29, 97, 0.9);
-	turn(90, 97, 1.7);
-	nopid(4);
-	pros::delay(1000);
-	driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
-	pros::delay(1000);
-	nopid(2, 50);
-	oneside(27, true);
-	driveforward(35, 127, 1.8);
+	// leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	// rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	// intake.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	// driveforward(29, 97, 0.9);
+	// turn(90, 97, 1.7);
+	// driveforward(4, 127, 1.5);
+	// pros::delay(1000);
+	// driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+	// pros::delay(1000);
+	// nopid(2, 50);
+	// oneside(27, true);
+	// driveforward(35, 127, 1.8);
 	leftdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	rightdrive.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 	intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
