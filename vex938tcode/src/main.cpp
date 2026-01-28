@@ -425,49 +425,52 @@ void autonomous() {
 	}
 	if (autonchoice == 1) {
 		//!left auton
-		driveforward(29, 97, 0.9);
-		turn(-90, 97, 1.7);
-		load.set_value(true);
+		wing.set_value(true);
 		intake.move(600);
-		driveforward(4, 127, 1.5);
-		pros::delay(1000);
-		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
+		driveforward(24, 127, 5, 700, 1.2);
+		driveforward(10.8, 107, 2, 1000, 1.3);
+		turn(-51, 127, 0.8);
+
+		driveforward(13, 97, 1, 1500, 1.4);
+		load.set_value(true);
+		driveforward(-2, 127, 0.5, 600);
+		oneside(-40, false, true, 80);
+		driveforward(-40, 127, 20, 1000, 20);
+		nopid(7, 60);
+		driveforward(-40, 127, 10, 800);
 		outtake.move(600);
-		load.set_value(false);
-		pros::delay(2000);
-		nopid(2, 50);
+		intake.move(600);
+		pros::delay(1500);
+		load.set_value(true);
 		outtake.move(0);
-		oneside(25, false, false);
-		nopid(6, 60);
+		driveforward(27, 107, 2, 2000, 1.3);
 		pros::delay(1000);
-		turn(175, 97, 9);
-		outtake.move(-75);
-		driveforward(-25, 120, 1.8);
-		nopid(5, 70);
-		nopidback(5, 70);
-		nopid(5, 70);
-		nopidback(5, 70);
-		nopid(5, 70);
-		nopidback(5, 70);
-		nopid(5, 70);
-		nopidback(5, 70);
+		driveforward(-36, 127, 10);
+		outtake.move(600);
 	} else if (autonchoice == 2) {
 		//!right auton
-		driveforward(29, 97, 0.9);
-		turn(90, 87, 1.7);
+		wing.set_value(true);
+		intake.move(600);
+		driveforward(24, 127, 5, 700, 1.2);
+		driveforward(10.8, 107, 2, 1000, 1.3);
+		turn(51, 127, 0.8);
+
+		driveforward(13, 97, 1, 1500, 1.4);
 		load.set_value(true);
-		intake.move(600);
-		nopid(10, 70);
-		intake.move(600);
-		driveforward(-24, 70, 6, 1.0, 5, 0.05, 0.01);
-		load.set_value(false);
+		driveforward(-2, 127, 0.5, 600);
+		oneside(-40, true, true, 80);
+		driveforward(-40, 127, 20, 1000, 20);
+		nopid(7, 60);
+		driveforward(-40, 127, 10, 800);
 		outtake.move(600);
+		intake.move(600);
+		pros::delay(1500);
+		load.set_value(true);
+		outtake.move(0);
+		driveforward(27, 107, 2, 2000, 1.3);
 		pros::delay(1000);
-		nopid(2, 50);
-		oneside(27, true, false);
-		driveforward(35, 127, 1.8);
-		outtake.move(-600);
-		intake.move(-600);
+		driveforward(-36, 127, 10);
+		outtake.move(600);
 
     } else if (autonchoice == 3) {
 	//!skills auton
