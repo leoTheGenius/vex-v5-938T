@@ -119,7 +119,7 @@ void competition_initialize() {
  */
  //should i remove speed?
  //actually no, for small spaces speed slow  might be goooooooooooooooooo0o00o0o00o00o0o000o000o0000o0o00oo00o0o0o0o0o0o00o0o0o0o0o0o0o0o0d
-void driveforward(double dist, double speed, const double posrange = 0.3, const double timeout = 4000, const double speedmulti = 1.0, const double kppos = 0.271, const double kipos = 0.037, const double kdpos = 0.1) {//!inches
+void driveforward(double dist, double speed, const double posrange = 0.3, const double timeout = 4000, const double speedmulti = 1.0, const double kppos = 0.271, const double kipos = 0.037, const double kdpos = 0.05) {//!inches
 	leftdrive.tare_position();
 	rightdrive.tare_position();
 	
@@ -399,16 +399,45 @@ void autonomous() {
 		// turn(-30, 97, 5);
 		// nopid(70, 80);
 
+
+
+		// wing.set_value(true);
+		// intake.move(600);
+		// driveforward(25, 127, 5, 700, 1.2);
+		// driveforward(10, 107, 2, 2000, 1.3);
+		// turn(48, 127, 0.8);
+
+		// driveforward(12, 97, 1, 1500, 1.4);
+		// load.set_value(true);
+		// driveforward(-1, 127, 0.5, 600);
+		// oneside(-44, true, true, 80);
+		// driveforward(-40, 127, 20, 1000, 20);
+		// nopid(7, 60);
+		// driveforward(-40, 127, 10, 800);
+		// outtake.move(600);
+		// intake.move(600);
+		// pros::delay(1500);
+		// load.set_value(true);
+		// outtake.move(0);
+		// driveforward(27, 107, 2, 2000, 1.3);
+		// pros::delay(1000);
+		// driveforward(-36, 127, 10);
+		// outtake.move(600);
+		// intake.move(600);
+		// outtake.move(600);
+		// driveforward(29, 100, 2);
+		// // driveforward(2, 60, 0.5);
+		// // turn();
 		wing.set_value(true);
 		intake.move(600);
-		driveforward(24, 127, 5, 700, 1.2);
-		driveforward(10.8, 107, 2, 1000, 1.3);
-		turn(51, 127, 0.8);
+		driveforward(25, 127, 5, 700, 1.2);
+		driveforward(10, 107, 2, 2000, 1.3);
+		turn(-48, 127, 0.8);
 
-		driveforward(13, 97, 1, 1500, 1.4);
+		driveforward(12, 97, 1, 1500, 1.4);
 		load.set_value(true);
-		driveforward(-2, 127, 0.5, 600);
-		oneside(-40, true, true, 80);
+		driveforward(-1, 127, 0.5, 600);
+		oneside(-44, false, true, 80);
 		driveforward(-40, 127, 20, 1000, 20);
 		nopid(7, 60);
 		driveforward(-40, 127, 10, 800);
@@ -421,7 +450,7 @@ void autonomous() {
 		pros::delay(1000);
 		driveforward(-36, 127, 10);
 		outtake.move(600);
-		// turn();
+
 	}
 	if (autonchoice == 1) {
 		//!left auton
@@ -451,14 +480,14 @@ void autonomous() {
 		//!right auton
 		wing.set_value(true);
 		intake.move(600);
-		driveforward(24, 127, 5, 700, 1.2);
-		driveforward(10.8, 107, 2, 1000, 1.3);
-		turn(51, 127, 0.8);
+		driveforward(25, 127, 5, 700, 1.2);
+		driveforward(10, 107, 2, 2000, 1.3);
+		turn(48, 127, 0.8);
 
-		driveforward(13, 97, 1, 1500, 1.4);
+		driveforward(12, 97, 1, 1500, 1.4);
 		load.set_value(true);
-		driveforward(-2, 127, 0.5, 600);
-		oneside(-40, true, true, 80);
+		driveforward(-1, 127, 0.5, 600);
+		oneside(-44, true, true, 80);
 		driveforward(-40, 127, 20, 1000, 20);
 		nopid(7, 60);
 		driveforward(-40, 127, 10, 800);
@@ -474,6 +503,9 @@ void autonomous() {
 
     } else if (autonchoice == 3) {
 	//!skills auton
+	intake.move(600);
+	outtake.move(600);
+	driveforward(29, 100, 2);
     }
 }
 
