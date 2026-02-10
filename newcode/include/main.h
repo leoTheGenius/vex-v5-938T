@@ -78,6 +78,9 @@ void competition_initialize(void);
 void opcontrol(void);
 #ifdef __cplusplus
 }
+extern pros::MotorGroup intake;
+extern pros::adi::DigitalOut load;
+extern pros::adi::DigitalOut intakeblock;
 #endif
 
 #ifdef __cplusplus

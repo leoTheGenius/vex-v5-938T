@@ -432,12 +432,12 @@ void autonomous() {
 		intake.move(600);
 		driveforward(25, 127, 5, 700, 1.2);
 		driveforward(10, 107, 2, 2000, 1.3);
-		turn(-48, 127, 0.8);
+		turn(48, 127, 0.8);
 
 		driveforward(12, 97, 1, 1500, 1.4);
 		load.set_value(true);
 		driveforward(-1, 127, 0.5, 600);
-		oneside(-44, false, true, 80);
+		oneside(-44, true, true, 80);
 		driveforward(-40, 127, 20, 1000, 20);
 		nopid(7, 60);
 		driveforward(-40, 127, 10, 800);

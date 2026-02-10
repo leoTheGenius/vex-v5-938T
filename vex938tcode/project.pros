@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "leftauto",
+    "project_name": "rightauto",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -594,7 +594,7 @@
     "upload_options": {
       "description": "938tgoatcode",
       "icon": "pizza",
-      "slot": 5
+      "slot": 1
     },
     "use_early_access": false
   }

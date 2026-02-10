@@ -1,4 +1,5 @@
 #include "main.h"
+#include "pros/motors.h"
 
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
@@ -6,7 +7,7 @@
 /////
 
 // These are out of 127
-const int DRIVE_SPEED = 110;
+const int DRIVE_SPEED = 120;
 const int TURN_SPEED = 90;
 const int SWING_SPEED = 110;
 
@@ -15,17 +16,17 @@ const int SWING_SPEED = 110;
 ///
 void default_constants() {
   // P, I, D, and Start I
-  chassis.pid_drive_constants_set(20.0, 0.0, 100.0);         // Fwd/rev constants, used for odom and non odom motions
-  chassis.pid_heading_constants_set(11.0, 0.0, 20.0);        // Holds the robot straight while going forward without odom
-  chassis.pid_turn_constants_set(3.0, 0.05, 20.0, 15.0);     // Turn in place constants
-  chassis.pid_swing_constants_set(6.0, 0.0, 65.0);           // Swing constants
-  chassis.pid_odom_angular_constants_set(6.5, 0.0, 52.5);    // Angular control for odom motions
-  chassis.pid_odom_boomerang_constants_set(5.8, 0.0, 32.5);  // Angular control for boomerang motions
+  chassis.pid_drive_constants_set(19.7, 0.0, 265); //20        // Fwd/rev constants, used for odom and non odom motions
+  chassis.pid_heading_constants_set(2.0, 0.2, 20.0);        // Holds the robot straight while going forward without odom
+  chassis.pid_turn_constants_set(3.2, 0.03, 26.8, 15.0);     // Turn in place constants
+  chassis.pid_swing_constants_set(6.0, 0.0, 45.0);           // Swing constants
+  chassis.pid_odom_angular_constants_set(7.5, 0.0, 42.5);    // Angular control for odom motions
+  chassis.pid_odom_boomerang_constants_set(4.8, 0.0, 27.5);  // Angular control for boomerang motions
 
   // Exit conditions
-  chassis.pid_turn_exit_condition_set(90_ms, 3_deg, 250_ms, 7_deg, 500_ms, 500_ms);
-  chassis.pid_swing_exit_condition_set(90_ms, 3_deg, 250_ms, 7_deg, 500_ms, 500_ms);
-  chassis.pid_drive_exit_condition_set(90_ms, 1_in, 250_ms, 3_in, 500_ms, 500_ms);
+  chassis.pid_turn_exit_condition_set(90_ms, 0.8_deg, 250_ms, 7_deg, 500_ms, 500_ms);
+  chassis.pid_swing_exit_condition_set(90_ms, 1_deg, 250_ms, 7_deg, 500_ms, 500_ms);
+  chassis.pid_drive_exit_condition_set(80_ms, 0.6_in, 250_ms, 2_in, 500_ms, 500_ms);
   chassis.pid_odom_turn_exit_condition_set(90_ms, 3_deg, 250_ms, 7_deg, 500_ms, 750_ms);
   chassis.pid_odom_drive_exit_condition_set(90_ms, 1_in, 250_ms, 3_in, 500_ms, 750_ms);
   chassis.pid_turn_chain_constant_set(3_deg);
@@ -39,7 +40,7 @@ void default_constants() {
 
   // The amount that turns are prioritized over driving in odom motions
   // - if you have tracking wheels, you can run this higher.  1.0 is the max
-  chassis.odom_turn_bias_set(0.9);
+  chassis.odom_turn_bias_set(0.6);
 
   chassis.odom_look_ahead_set(7_in);           // This is how far ahead in the path the robot looks at
   chassis.odom_boomerang_distance_set(16_in);  // This sets the maximum distance away from target that the carrot point can be
@@ -60,11 +61,11 @@ void drive_example() {
   chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
+  // chassis.pid_drive_set(-24_in, DRIVE_SPEED);
+  // chassis.pid_wait();
 
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
+  // chassis.pid_drive_set(-12_in, DRIVE_SPEED);
+  // chassis.pid_wait();
 }
 
 ///
@@ -77,8 +78,8 @@ void turn_example() {
   chassis.pid_turn_set(90_deg, TURN_SPEED);
   chassis.pid_wait();
 
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait();
+  // chassis.pid_turn_set(45_deg, TURN_SPEED);
+  // chassis.pid_wait();
 
   chassis.pid_turn_set(0_deg, TURN_SPEED);
   chassis.pid_wait();
@@ -254,7 +255,7 @@ void odom_drive_example() {
   chassis.pid_wait();
 }
 
-///
+///`   
 // Odom Pure Pursuit
 ///
 void odom_pure_pursuit_example() {
@@ -372,7 +373,78 @@ void measure_offsets() {
   if (chassis.odom_tracker_back != nullptr) chassis.odom_tracker_back->distance_to_center_set(b_offset);
   if (chassis.odom_tracker_front != nullptr) chassis.odom_tracker_front->distance_to_center_set(f_offset);
 }
-
+void rightlong() {
+    chassis.odom_xyt_set(0_in, 0_in, 22_deg);
+    intakeblock.set_value(true);
+    intake.move_velocity(600);
+    chassis.pid_odom_set(25_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_odom_set(16_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_turn_set(73_deg, TURN_SPEED);
+    chassis.pid_wait();
+    chassis.pid_odom_set(13_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_swing_set(ez::LEFT_SWING, 175_deg, SWING_SPEED, 0, ez::ccw);
+    chassis.pid_wait();
+    chassis.pid_odom_set(13_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_odom_set(-15_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    intakeblock.set_value(false);
+    pros::delay(750);
+    chassis.odom_xyt_set(0, 0, 0);
+    load.set_value(true);
+    chassis.pid_odom_set(31_in, DRIVE_SPEED, true);
+    chassis.pid_wait_until(20_in);
+    intakeblock.set_value(true);
+    chassis.pid_wait();
+    pros::delay(500);
+    chassis.pid_odom_set(-35_in, DRIVE_SPEED, true);
+    intakeblock.set_value(false);
+}
+void leftlong() {
+    chassis.odom_xyt_set(0_in, 0_in, 338_deg);
+    intakeblock.set_value(true);
+    intake.move_velocity(600);
+    chassis.pid_odom_set(25_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_odom_set(16_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_turn_set(-73_deg, TURN_SPEED);
+    chassis.pid_wait();
+    chassis.pid_odom_set(13_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_swing_set(ez::RIGHT_SWING, -175_deg, SWING_SPEED, 0, ez::cw);
+    chassis.pid_wait();
+    chassis.pid_odom_set(13_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    chassis.pid_odom_set(-15_in, DRIVE_SPEED, true);
+    chassis.pid_wait();
+    intakeblock.set_value(false);
+    pros::delay(750);
+    chassis.odom_xyt_set(0, 0, 0);
+    load.set_value(true);
+    chassis.pid_odom_set(31_in, DRIVE_SPEED, true);
+    chassis.pid_wait_until(20_in);
+    intakeblock.set_value(true);
+    chassis.pid_wait();
+    pros::delay(500);
+    chassis.pid_odom_set(-35_in, DRIVE_SPEED, true);
+    intakeblock.set_value(false);
+}
+void skills() {
+  chassis.odom_xyt_set(0_in, 0_in, 90_deg);
+  intakeblock.set_value(true);
+  intake.move_velocity(600);
+  chassis.pid_odom_set(32_in, DRIVE_SPEED, true);
+  chassis.pid_wait();
+  chassis.pid_turn_set(180_deg, TURN_SPEED);
+  chassis.pid_wait();
+  chassis.pid_odom_set(-30_in, DRIVE_SPEED, true);
+  chassis.pid_wait();
+  intakeblock.set_value(false);
+}
 // . . .
 // Make your own autonomous functions here!
 // . . .

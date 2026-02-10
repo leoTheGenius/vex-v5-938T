@@ -1,13 +1,14 @@
 #include "main.h"
-pros::Motor intake(5, pros::v5::MotorGears::blue);
-pros::Motor outtake(-7, pros::v5::MotorGears::blue);
+pros::MotorGroup intake({5, -7}, pros::v5::MotorGears::blue);
 pros::adi::DigitalOut load('H');
-pros::adi::DigitalOut wing('A');
+pros::adi::DigitalOut intakeblock('A');
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
 /////
+enum Mode { no, a, b, r1, r2, down, right, x, y, l1, l2, up, leftbutton};
 
+Mode activeMode = no;
 // Chassis constructor
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
@@ -16,7 +17,7 @@ ez::Drive chassis(
 
     6,      // IMU Port
     3.25,  // Wheel Diameter (Remember, 4" wheels without screw holes are actually 4.125!)
-    600);   // Wheel RPM = cartridge * (motor gear / wheel gear)
+    600, 1.0);   // Wheel RPM = cartridge * (motor gear / wheel gear)
 
 // Uncomment the trackers you're using here!
 // - `8` and `9` are smart ports (making these negative will reverse the sensor)
@@ -48,9 +49,9 @@ void initialize() {
   // chassis.odom_tracker_left_set(&vert_tracker);
 
   // Configure your chassis controls
-  chassis.opcontrol_curve_buttons_toggle(true);   // Enables modifying the controller curve with buttons on the joysticks
-  chassis.opcontrol_drive_activebrake_set(0.0);   // Sets the active brake kP. We recommend ~2.  0 will disable.
-  chassis.opcontrol_curve_default_set(0.0, 0.0);  // Defaults for curve. If using tank, only the first parameter is used. (Comment this line out if you have an SD card!)
+  chassis.opcontrol_curve_buttons_toggle(false);   // Enables modifying the controller curve with buttons on the joysticks
+  chassis.opcontrol_drive_activebrake_set(1.05);   // Sets the active brake kP. We recommend ~2.  0 will disable.
+  chassis.opcontrol_curve_default_set(0.5, 0.7);  // Defaults for curve. If using tank, only the first parameter is used. (Comment this line out if you have an SD card!)
 
   // Set the drive to your own constants from autons.cpp!
   default_constants();
@@ -61,20 +62,11 @@ void initialize() {
 
   // Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-      {"Drive\n\nDrive forward and come back", drive_example},
-      {"Turn\n\nTurn 3 times.", turn_example},
-      {"Drive and Turn\n\nDrive forward, turn, come back", drive_and_turn},
-      {"Drive and Turn\n\nSlow down during drive", wait_until_change_speed},
-      {"Swing Turn\n\nSwing in an 'S' curve", swing_example},
-      {"Motion Chaining\n\nDrive forward, turn, and come back, but blend everything together :D", motion_chaining},
-      {"Combine all 3 movements", combining_movements},
-      {"Interference\n\nAfter driving forward, robot performs differently if interfered or not", interfered_example},
-      {"Simple Odom\n\nThis is the same as the drive example, but it uses odom instead!", odom_drive_example},
-      {"Pure Pursuit\n\nGo to (0, 30) and pass through (6, 10) on the way.  Come back to (0, 0)", odom_pure_pursuit_example},
-      {"Pure Pursuit Wait Until\n\nGo to (24, 24) but start running an intake once the robot passes (12, 24)", odom_pure_pursuit_wait_until_example},
-      {"Boomerang\n\nGo to (0, 24, 45) then come back to (0, 0, 0)", odom_boomerang_example},
-      {"Boomerang Pure Pursuit\n\nGo to (0, 24, 45) on the way to (24, 24) then come back to (0, 0, 0)", odom_boomerang_injected_pure_pursuit_example},
-      {"Measure Offsets\n\nThis will turn the robot a bunch of times and calculate your offsets for your tracking wheels.", measure_offsets},
+    {"rightauton goal rush\n\n9 block long goal", rightlong},
+    {"leftauton goal rush\n\n9 block long goal", leftlong},
+    
+    
+      
   });
 
   // Initialize chassis and auton selector
@@ -120,7 +112,7 @@ void autonomous() {
   chassis.pid_targets_reset();                // Resets PID targets to 0
   chassis.drive_imu_reset();                  // Reset gyro position to 0
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
-  chassis.odom_xyt_set(0_in, 0_in, 0_deg);    // Set the current position, you can start at a specific position with this
+  chassis.odom_xyt_set(0_in, 0_in, 22_deg);    // Set the current position, you can start at a specific position with this
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
 
   /*
@@ -244,21 +236,81 @@ void ez_template_extras() {
  */
 void opcontrol() {
   // This is preference to what you like to drive on
+  master.rumble(".");
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);
-
+  bool preva = false, prevb = false, prevy = false, prevx = false, prevleft = false, prevright = false, prevup = false, prevdown = false, prevl1 = false, prevl2 = false, prevr1 = false, prevr2 = false;
+	bool curra = false, currb = false, curry = false, currx = false, currleft = false, currright = false, currup = false, currdown = false, currl1 = false, currl2 = false, currr1 = false, currr2 = false;
   while (true) {
     // Gives you some extras to make EZ-Template ezier
     ez_template_extras();
 
-    chassis.opcontrol_tank();  // Tank control
-    // chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
+    // chassis.opcontrol_tank();  // Tank control
+    chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
     // chassis.opcontrol_arcade_standard(ez::SINGLE);  // Standard single arcade
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
 
-    // . . .
-    // Put more user control code here!
-    // . . .
+
+		curra = master.get_digital(DIGITAL_A);
+		currb = master.get_digital(DIGITAL_B);
+		curry = master.get_digital(DIGITAL_Y);
+		currx = master.get_digital(DIGITAL_X);
+		currleft = master.get_digital(DIGITAL_LEFT);
+		currright = master.get_digital(DIGITAL_RIGHT);
+		currup = master.get_digital(DIGITAL_UP);
+		currdown = master.get_digital(DIGITAL_DOWN);
+		currl1 = master.get_digital(DIGITAL_L1);
+		currl2 = master.get_digital(DIGITAL_L2);
+		currr1 = master.get_digital(DIGITAL_R1);
+		currr2 = master.get_digital(DIGITAL_R2);
+		if ((curra == true) && (preva == false)) {
+      		activeMode = (activeMode == a) ? no : a;
+      		if (activeMode == a) {
+        		intake.move_velocity(600);
+    		} else {
+				intake.move_velocity(0);
+	  		}
+		}
+		else if ((currb == true) && (prevb == false)) {
+			activeMode = (activeMode == b) ? no : b;
+			if (activeMode == b) {
+				intake.move_velocity(-600);
+			} else {
+				intake.move_velocity(0);
+			}
+		}
+		else if ((currr1 == true) && (prevr1 == false)) {
+			activeMode = (activeMode == r1) ? no : r1;
+			if (activeMode == r1) {
+				load.set_value(true);
+			} else {
+				load.set_value(false);
+			}
+		}
+		else if ((currl1 == true) && (prevl1 == false)) {
+			activeMode = (activeMode == l1) ? no : l1;
+			if (activeMode == l1) {
+				intakeblock.set_value(true);
+			} else {
+				intakeblock.set_value(false);
+			}
+		}
+
+        
+		// update previous button states
+		preva = curra;
+		prevb = currb;
+		prevy = curry;
+		prevx = currx;
+		prevleft = currleft;
+		prevright = currright;
+		prevup = currup;
+		prevdown = currdown;
+		prevl1 = currl1;
+		prevl2 = currl2;
+		prevr1 = currr1;
+		prevr2 = currr2;
+
 
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
   }
